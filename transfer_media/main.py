@@ -3,8 +3,9 @@ import time
 from datetime import datetime
 
 
-def list_external_drives():
-    volumes = os.listdir("/Volumes")
+def list_external_drives(test_dir=None):
+    directory = test_dir if test_dir is not None else "/Volumes"
+    volumes = os.listdir(directory)
     return [vol for vol in volumes if vol != "Macintosh HD"]
 
 
@@ -66,8 +67,8 @@ def get_destination_path(output_path, file_date):
     )
 
 
-def main():
-    external_drives = list_external_drives()
+def main(test_dir=None):
+    external_drives = list_external_drives(test_dir)
 
     if not external_drives:
         print("No external drives found.")
@@ -75,6 +76,9 @@ def main():
 
     input_drive = choose_drive(external_drives, "input")
     output_drive = choose_drive(external_drives, "output")
+
+    print(f"Selected input drive: {input_drive}")
+    print(f"Selected output drive: {output_drive}")
 
     input_path = os.path.join("/Volumes", input_drive)
     output_path = os.path.join("/Volumes", output_drive)
