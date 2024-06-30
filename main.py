@@ -1,10 +1,11 @@
 import os
+import time
+from datetime import datetime
 
 
 def list_external_drives():
     volumes = os.listdir("/Volumes")
-    external_drives = [vol for vol in volumes if vol != "Macintosh HD"]
-    return external_drives
+    return [vol for vol in volumes if vol != "Macintosh HD"]
 
 
 def choose_drive(drives, purpose):
@@ -23,6 +24,48 @@ def choose_drive(drives, purpose):
             print("Please enter a valid number.")
 
 
+def find_mp4_files(input_path):
+    mp4_files = []
+    for root, dirs, files in os.walk(input_path):
+        if "DCIM" in root.split(os.sep):
+            for file in files:
+                if file.lower().endswith(".mp4"):
+                    mp4_files.append(os.path.join(root, file))
+    return mp4_files
+
+
+def extract_date_from_file(file_path):
+    try:
+        stat = os.stat(file_path)
+        return datetime.fromtimestamp(stat.st_mtime)
+    except Exception as e:
+        print(f"Error extracting date from {file_path}: {str(e)}")
+    return None
+
+
+def get_destination_path(output_path, file_date):
+    month_names = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+    ]
+    return os.path.join(
+        output_path,
+        "Videos",
+        str(file_date.year),
+        f"{file_date.month:02d}-{month_names[file_date.month-1]}",
+    )
+
+
 def main():
     external_drives = list_external_drives()
 
@@ -30,29 +73,29 @@ def main():
         print("No external drives found.")
         return
 
-    print("External drives found:")
-    for drive in external_drives:
-        print(f"- {drive}")
-
     input_drive = choose_drive(external_drives, "input")
-    remaining_drives = [d for d in external_drives if d != input_drive]
+    output_drive = choose_drive(external_drives, "output")
 
-    if not remaining_drives:
-        print("No other external drives available for output.")
-        return
-
-    output_drive = choose_drive(remaining_drives, "output")
-
-    print("\nYou have selected:")
-    print(f"Input drive: {input_drive}")
-    print(f"Output drive: {output_drive}")
-
-    # Here you can add code to work with the selected drives
-    # For example:
     input_path = os.path.join("/Volumes", input_drive)
     output_path = os.path.join("/Volumes", output_drive)
-    print(f"\nInput drive path: {input_path}")
-    print(f"Output drive path: {output_path}")
+
+    mp4_files = find_mp4_files(input_path)
+
+    for file in mp4_files:
+        file_date = extract_date_from_file(file)
+        if file_date:
+            dest_path = get_destination_path(output_path, file_date)
+            print(f"File: {file}")
+            print(f"Date: {file_date}")
+            print(f"Destination: {dest_path}")
+            existing_files = find_mp4_files(dest_path)
+            if file in existing_files:
+                print(
+                    f"File {file} already exists in the destination path: {dest_path}"
+                )
+        else:
+            print(f"Couldn't extract date from file: {file}")
+            print(f"This file will not be moved.")
 
 
 if __name__ == "__main__":
