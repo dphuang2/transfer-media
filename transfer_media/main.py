@@ -5,6 +5,7 @@ import argparse
 import os
 from datetime import datetime
 import hashlib
+import shutil
 
 
 def list_external_drives(test_dir=None):
@@ -136,14 +137,19 @@ def main(volume_directory=None):
                     print(
                         f'Detected duplicate file "{os.path.relpath(dest_path, output_path)}", not overriding'
                     )
-                else:
-                    confirmation = input(
-                        f'Checksum mismatch for file "{file}". Do you want to proceed with the transfer? (yes/no): '
+                    break
+
+                if os.path.basename(file) == os.path.basename(existing_file):
+                    print(
+                        f'Detected duplicate file "{os.path.relpath(dest_path, output_path)}" with the same name, not overriding'
                     )
-                    if confirmation.lower() == "yes":
-                        print(f'Proceeding with transfer of file "{file}".')
-                    else:
-                        print(f'Transfer of file "{file}" cancelled.')
+                    break
+            else:
+                # If the for loop didn't break, then copy the file
+                dest_file_path = os.path.join(dest_path, os.path.basename(file))
+                os.makedirs(dest_path, exist_ok=True)
+                shutil.copy2(file, dest_file_path)
+                print(f"Copied file to {dest_file_path}")
         else:
             print(f"Couldn't extract date from file: {file}")
             print(f"This file will not be moved.")
