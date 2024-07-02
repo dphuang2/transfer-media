@@ -11,8 +11,20 @@ from unittest.mock import patch
     ],
 )
 def test_detect_existing_file(self):
+    import io
+    import sys
+
+    captured_output = io.StringIO()
+    sys.stdout = captured_output
+
     main(
-        test_dir=os.path.abspath(
+        volume_directory=os.path.abspath(
             os.path.join(os.path.dirname(__file__), "test_detect_existing_file")
         )
+    )
+
+    sys.stdout = sys.__stdout__
+    output_string = captured_output.getvalue()
+    assert (
+        'Detected duplicate file "Videos/2024/06-Jun", not overriding' in output_string
     )

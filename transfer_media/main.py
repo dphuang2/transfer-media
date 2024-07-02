@@ -1,6 +1,8 @@
+#!/usr/bin/env python3
+
 import os
-import time
 from datetime import datetime
+import hashlib
 
 
 def list_external_drives(test_dir=None):
@@ -25,13 +27,22 @@ def choose_drive(drives, purpose):
             print("Please enter a valid number.")
 
 
-def find_mp4_files(input_path):
+def find_mp4_files_in_sd_card(input_path):
     mp4_files = []
     for root, dirs, files in os.walk(input_path):
         if "DCIM" in root.split(os.sep):
             for file in files:
                 if file.lower().endswith(".mp4"):
                     mp4_files.append(os.path.join(root, file))
+    return mp4_files
+
+
+def find_mp4_files(input_path):
+    mp4_files = []
+    for root, dirs, files in os.walk(input_path):
+        for file in files:
+            if file.lower().endswith(".mp4"):
+                mp4_files.append(os.path.join(root, file))
     return mp4_files
 
 
@@ -67,9 +78,31 @@ def get_destination_path(output_path, file_date):
     )
 
 
-def main(test_dir=None):
-    external_drives = list_external_drives(test_dir)
+def calculate_checksum(file_path):
+    hash_md5 = hashlib.md5()
+    with open(file_path, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hash_md5.update(chunk)
+    return hash_md5.hexdigest()
 
+
+import argparse
+
+
+def main(volume_directory=None):
+    parser = argparse.ArgumentParser(description="Transfer media files.")
+    parser.add_argument(
+        "-v",
+        "--volume_directory",
+        help="Specify the volume directory",
+        type=str,
+        default="/Volumes",
+    )
+    args = parser.parse_args()
+    if volume_directory is not None:
+        args.volume_directory = volume_directory
+
+    external_drives = list_external_drives(args.volume_directory)
     if not external_drives:
         print("No external drives found.")
         return
@@ -80,10 +113,10 @@ def main(test_dir=None):
     print(f"Selected input drive: {input_drive}")
     print(f"Selected output drive: {output_drive}")
 
-    input_path = os.path.join("/Volumes", input_drive)
-    output_path = os.path.join("/Volumes", output_drive)
+    input_path = os.path.join(args.volume_directory, input_drive)
+    output_path = os.path.join(args.volume_directory, output_drive)
 
-    mp4_files = find_mp4_files(input_path)
+    mp4_files = find_mp4_files_in_sd_card(input_path)
 
     for file in mp4_files:
         file_date = extract_date_from_file(file)
@@ -93,10 +126,25 @@ def main(test_dir=None):
             print(f"Date: {file_date}")
             print(f"Destination: {dest_path}")
             existing_files = find_mp4_files(dest_path)
-            if file in existing_files:
-                print(
-                    f"File {file} already exists in the destination path: {dest_path}"
+            for existing_file in existing_files:
+
+                source_checksum = calculate_checksum(file)
+                dest_checksum = calculate_checksum(
+                    os.path.join(dest_path, os.path.basename(existing_file))
                 )
+
+                if source_checksum == dest_checksum:
+                    print(
+                        f'Detected duplicate file "{os.path.relpath(dest_path, output_path)}", not overriding'
+                    )
+                else:
+                    confirmation = input(
+                        f'Checksum mismatch for file "{file}". Do you want to proceed with the transfer? (yes/no): '
+                    )
+                    if confirmation.lower() == "yes":
+                        print(f'Proceeding with transfer of file "{file}".')
+                    else:
+                        print(f'Transfer of file "{file}" cancelled.')
         else:
             print(f"Couldn't extract date from file: {file}")
             print(f"This file will not be moved.")
