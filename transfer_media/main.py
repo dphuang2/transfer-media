@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+
+import argparse
 import os
 from datetime import datetime
 import hashlib
@@ -84,9 +86,6 @@ def calculate_checksum(file_path):
         for chunk in iter(lambda: f.read(4096), b""):
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
-
-
-import argparse
 
 
 def main(volume_directory=None):
