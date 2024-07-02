@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
 
-
 import argparse
 import os
 from datetime import datetime
 import hashlib
 import shutil
+import logging
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
 
 def list_external_drives(test_dir=None):
@@ -15,7 +20,7 @@ def list_external_drives(test_dir=None):
 
 
 def choose_drive(drives, purpose):
-    print(f"\nChoose {purpose} drive:")
+    print(f"Choose {purpose} drive:")
     for i, drive in enumerate(drives, 1):
         print(f"{i}. {drive}")
 
@@ -25,9 +30,9 @@ def choose_drive(drives, purpose):
             if 1 <= choice <= len(drives):
                 return drives[choice - 1]
             else:
-                print("Invalid choice. Please try again.")
+                logging.warning("Invalid choice. Please try again.")
         except ValueError:
-            print("Please enter a valid number.")
+            logging.warning("Please enter a valid number.")
 
 
 def find_mp4_files_in_sd_card(input_path):
@@ -54,7 +59,7 @@ def extract_date_from_file(file_path):
         stat = os.stat(file_path)
         return datetime.fromtimestamp(stat.st_mtime)
     except Exception as e:
-        print(f"Error extracting date from {file_path}: {str(e)}")
+        logging.error(f"Error extracting date from {file_path}: {str(e)}")
     return None
 
 
@@ -89,32 +94,20 @@ def calculate_checksum(file_path):
     return hash_md5.hexdigest()
 
 
-def main(volume_directory=None):
-    parser = argparse.ArgumentParser(description="Transfer media files.")
-    parser.add_argument(
-        "-v",
-        "--volume_directory",
-        help="Specify the volume directory",
-        type=str,
-        default="/Volumes",
-    )
-    args = parser.parse_args()
-    if volume_directory is not None:
-        args.volume_directory = volume_directory
-
-    external_drives = list_external_drives(args.volume_directory)
+def main(volume_directory: str = "/Volumes"):
+    external_drives = list_external_drives(volume_directory)
     if not external_drives:
-        print("No external drives found.")
+        logging.warn("No external drives found.")
         return
 
     input_drive = choose_drive(external_drives, "input")
     output_drive = choose_drive(external_drives, "output")
 
-    print(f"Selected input drive: {input_drive}")
-    print(f"Selected output drive: {output_drive}")
+    logging.debug(f"Selected input drive: {input_drive}")
+    logging.debug(f"Selected output drive: {output_drive}")
 
-    input_path = os.path.join(args.volume_directory, input_drive)
-    output_path = os.path.join(args.volume_directory, output_drive)
+    input_path = os.path.join(volume_directory, input_drive)
+    output_path = os.path.join(volume_directory, output_drive)
 
     mp4_files = find_mp4_files_in_sd_card(input_path)
 
@@ -122,9 +115,9 @@ def main(volume_directory=None):
         file_date = extract_date_from_file(file)
         if file_date:
             dest_path = get_destination_path(output_path, file_date)
-            print(f"File: {file}")
-            print(f"Date: {file_date}")
-            print(f"Destination: {dest_path}")
+            logging.debug(f"File: {file}")
+            logging.debug(f"Date: {file_date}")
+            logging.debug(f"Destination: {dest_path}")
             existing_files = find_mp4_files(dest_path)
             for existing_file in existing_files:
 
@@ -134,13 +127,13 @@ def main(volume_directory=None):
                 )
 
                 if source_checksum == dest_checksum:
-                    print(
+                    logging.warning(
                         f'Detected duplicate file "{os.path.relpath(dest_path, output_path)}", not overriding'
                     )
                     break
 
                 if os.path.basename(file) == os.path.basename(existing_file):
-                    print(
+                    logging.warning(
                         f'Detected duplicate file "{os.path.relpath(dest_path, output_path)}" with the same name, not overriding'
                     )
                     break
@@ -149,11 +142,19 @@ def main(volume_directory=None):
                 dest_file_path = os.path.join(dest_path, os.path.basename(file))
                 os.makedirs(dest_path, exist_ok=True)
                 shutil.copy2(file, dest_file_path)
-                print(f"Copied file to {dest_file_path}")
+                logging.info(f"Copied file to {dest_file_path}")
         else:
-            print(f"Couldn't extract date from file: {file}")
-            print(f"This file will not be moved.")
+            logging.warning(f"Couldn't extract date from file: {file}")
+            logging.warning(f"This file will not be moved.")
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Transfer media files.")
+    parser.add_argument(
+        "-v",
+        "--volume_directory",
+        help="Specify the volume directory",
+        type=str,
+    )
+    args = parser.parse_args()
+    main(args.volume_directory)
