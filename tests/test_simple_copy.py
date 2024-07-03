@@ -1,6 +1,6 @@
 import os
 import pytest
-from transfer_media.main import main
+from transfer_media.main import transfer
 from unittest.mock import patch
 
 
@@ -31,7 +31,7 @@ def volume_directory():
     ],
 )
 def test_simple_copy(mock_input, volume_directory):
-    main(volume_directory=volume_directory)
+    transfer(volume_directory=volume_directory)
 
     output_path = os.path.join(volume_directory, "output")
     output_mp4_files = []

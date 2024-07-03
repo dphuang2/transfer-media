@@ -94,7 +94,7 @@ def calculate_checksum(file_path):
     return hash_md5.hexdigest()
 
 
-def main(volume_directory: str = "/Volumes"):
+def transfer(volume_directory: str = "/Volumes"):
     external_drives = list_external_drives(volume_directory)
     if not external_drives:
         logging.warn("No external drives found.")
@@ -156,5 +156,6 @@ if __name__ == "__main__":
         help="Specify the volume directory",
         type=str,
     )
+
     args = parser.parse_args()
-    main(args.volume_directory)
+    transfer(args.volume_directory)
