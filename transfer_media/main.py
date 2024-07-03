@@ -57,7 +57,14 @@ def extract_date_from_file(file_path):
     return None
 
 
-def get_destination_path(output_path, file_date):
+def get_day_labels(media_directory) -> dict[str, dict[str, str]]:
+    for root, dirs, files in os.walk(media_directory):
+        for file in files:
+            os.remove(os.path.join(root, file))
+    return {}
+
+
+def get_destination_path(output_path, file_date, without_videos=False):
     month_names = [
         "Jan",
         "Feb",
@@ -74,7 +81,7 @@ def get_destination_path(output_path, file_date):
     ]
     return os.path.join(
         output_path,
-        "Videos",
+        "" if without_videos else "Videos",
         str(file_date.year),
         f"{file_date.month:02d}-{month_names[file_date.month-1]}",
     )
@@ -88,19 +95,32 @@ def calculate_checksum(file_path):
     return hash_md5.hexdigest()
 
 
-def organize(volume_directory: str):
-    external_drives = list_external_drives(volume_directory)
-    if not external_drives:
-        logging.warn("No external drives found.")
-        return
-    target_drive = choose_drive(external_drives, "target")
-    mp4_files = find_mp4_files(target_drive)
+def organize(directory: str):
+
+    # move original folder to "{folder_name}_Original"
+    new_folder = f"{directory}_Original"
+    counter = 1
+    while os.path.exists(new_folder):
+        new_folder = f"{directory}_Original_{counter}"
+        counter += 1
+    os.rename(directory, new_folder)
+    logging.info(f"Renamed original folder to {new_folder}")
+    os.makedirs(directory)
+    mp4_files = find_mp4_files(new_folder)
+
+    for file in mp4_files:
+        file_date = extract_date_from_file(file)
+        if file_date:
+            dest_path = get_destination_path(directory, file_date, without_videos=True)
+        else:
+            logging.warning(f"Couldn't extract date from file: {file}")
+            logging.warning(f"This file will not be moved.")
 
 
 def transfer(volume_directory: str = "/Volumes"):
     external_drives = list_external_drives(volume_directory)
     if not external_drives:
-        logging.warn("No external drives found.")
+        logging.error("No external drives found.")
         return
 
     input_drive = choose_drive(external_drives, "input")
@@ -167,6 +187,6 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     if args.organize is not None:
-        organize(args.reorganize)
+        organize(args.organize)
     else:
         transfer(args.volume_directory)
