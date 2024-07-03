@@ -27,8 +27,8 @@ compare_checksums() {
   local all_match=true
 
   while IFS= read -r line; do
-    local checksum=$(echo "$line" | awk '{print $1}')
-    local file=$(echo "$line" | awk '{print $2}')
+    local checksum=$(echo "$line" | cut -d ' ' -f 1)
+    local file=$(echo "$line" | cut -d ' ' -f 2-)
     if ! grep -q "$checksum" "$checksum_file2"; then
       echo "Checksum mismatch for file: $file" >> "$logfile"
       all_match=false
@@ -36,8 +36,8 @@ compare_checksums() {
   done < "$checksum_file1"
 
   while IFS= read -r line; do
-    local checksum=$(echo "$line" | awk '{print $1}')
-    local file=$(echo "$line" | awk '{print $2}')
+    local checksum=$(echo "$line" | cut -d ' ' -f 1)
+    local file=$(echo "$line" | cut -d ' ' -f 2-)
     if ! grep -q "$checksum" "$checksum_file1"; then
       echo "Checksum mismatch for file: $file" >> "$logfile"
       all_match=false
