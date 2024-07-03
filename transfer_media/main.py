@@ -36,10 +36,14 @@ def choose_drive(drives, purpose):
 
 
 def find_mp4_files(input_path):
+    return find_files_with_ext(input_path, "mp4")
+
+
+def find_files_with_ext(input_path, ext):
     mp4_files = []
     for root, dirs, files in os.walk(input_path):
         for file in files:
-            if file.lower().endswith(".mp4"):
+            if file.lower().endswith(f".{ext}"):
                 mp4_files.append(os.path.join(root, file))
     return mp4_files
 
@@ -84,7 +88,7 @@ def calculate_checksum(file_path):
     return hash_md5.hexdigest()
 
 
-def reorganize(volume_directory: str = "/Volumes"):
+def organize(volume_directory: str):
     external_drives = list_external_drives(volume_directory)
     if not external_drives:
         logging.warn("No external drives found.")
@@ -156,12 +160,13 @@ if __name__ == "__main__":
         type=str,
     )
     parser.add_argument(
-        "-r",
-        "--reorganize",
-        help="Trigger reorganization mode",
-        action="store_true",
+        "-o",
+        "--organize",
+        help="Organize target dirctory",
+        type=str,
     )
     args = parser.parse_args()
-    if args.reorganize:
-        pass
-    transfer(args.volume_directory)
+    if args.organize is not None:
+        organize(args.reorganize)
+    else:
+        transfer(args.volume_directory)
