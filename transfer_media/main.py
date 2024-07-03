@@ -35,16 +35,6 @@ def choose_drive(drives, purpose):
             logging.warning("Please enter a valid number.")
 
 
-def find_mp4_files_in_sd_card(input_path):
-    mp4_files = []
-    for root, dirs, files in os.walk(input_path):
-        if "DCIM" in root.split(os.sep):
-            for file in files:
-                if file.lower().endswith(".mp4"):
-                    mp4_files.append(os.path.join(root, file))
-    return mp4_files
-
-
 def find_mp4_files(input_path):
     mp4_files = []
     for root, dirs, files in os.walk(input_path):
@@ -94,6 +84,15 @@ def calculate_checksum(file_path):
     return hash_md5.hexdigest()
 
 
+def reorganize(volume_directory: str = "/Volumes"):
+    external_drives = list_external_drives(volume_directory)
+    if not external_drives:
+        logging.warn("No external drives found.")
+        return
+    target_drive = choose_drive(external_drives, "target")
+    mp4_files = find_mp4_files(target_drive)
+
+
 def transfer(volume_directory: str = "/Volumes"):
     external_drives = list_external_drives(volume_directory)
     if not external_drives:
@@ -109,7 +108,7 @@ def transfer(volume_directory: str = "/Volumes"):
     input_path = os.path.join(volume_directory, input_drive)
     output_path = os.path.join(volume_directory, output_drive)
 
-    mp4_files = find_mp4_files_in_sd_card(input_path)
+    mp4_files = find_mp4_files(input_path)
 
     for file in mp4_files:
         file_date = extract_date_from_file(file)
@@ -156,6 +155,13 @@ if __name__ == "__main__":
         help="Specify the volume directory",
         type=str,
     )
-
+    parser.add_argument(
+        "-r",
+        "--reorganize",
+        help="Trigger reorganization mode",
+        action="store_true",
+    )
     args = parser.parse_args()
+    if args.reorganize:
+        pass
     transfer(args.volume_directory)
