@@ -16,8 +16,9 @@ check_and_label() {
 
   # Check if the directory already has a label
   if [[ "$dd_folder" != *-* ]]; then
-    echo "Directory $dd_folder does not have a label."
-    read -p "Enter a label for $dd_folder: " label
+    echo "Path $dir_path does not have a label."
+    echo -n "Enter a label for $dir_path: "
+    read label < /dev/tty
     if [[ -n "$label" ]]; then
       new_name="${dd_folder}-${label}"
       new_path="$(dirname "$dir_path")/$new_name"
@@ -33,5 +34,7 @@ check_and_label() {
 
 export -f check_and_label
 
-# Find all directories matching the YYYY/MM/DD pattern and process them
-find "$ROOT_DIR" -type d -regextype posix-extended -regex ".*/[0-9]{4}/[0-9]{2}/[0-9]{2}$" -exec bash -c 'check_and_label "$0"' {} \;
+# Use find and xargs to avoid subshell issue
+find "$ROOT_DIR" -type d | grep -E "/[0-9]{4}/[0-9]{2}/[0-9]{2}$" | while IFS= read -r dir; do
+  check_and_label "$dir"
+done
