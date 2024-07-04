@@ -16,9 +16,9 @@ EXTENSION=$3
 
 # Construct the exiftool command with optional extension filtering
 if [ -n "$EXTENSION" ]; then
-  EXIFTOOL_CMD="exiftool -r -P -overwrite_original -ext ${EXTENSION} -o ."
+  EXIFTOOL_CMD="exiftool -r -P -ext ${EXTENSION} -o ."
 else
-  EXIFTOOL_CMD="exiftool -r -P -overwrite_original --ext jpg --ext wav --ext mp4 -o ."
+  EXIFTOOL_CMD="exiftool -r -P -ext jpg -ext wav -ext mp4 -o ."
 fi
 
 # Append the rest of the command
