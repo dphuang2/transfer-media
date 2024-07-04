@@ -5,7 +5,7 @@ if [ "$#" -lt 2 ] || [ "$#" -gt 3 ]; then
   echo "Usage: $0 <source> <destination> [extension]"
   echo "  <source>: The source directory containing files to be processed."
   echo "  <destination>: The destination directory where processed files will be saved."
-  echo "  [extension]: Optional file extension to filter (e.g., mp4, wav)."
+  echo "  [extension]: Optional file extension to filter (default: wav, mp4, jpg)."
   exit 1
 fi
 
@@ -16,9 +16,9 @@ EXTENSION=$3
 
 # Construct the exiftool command with optional extension filtering
 if [ -n "$EXTENSION" ]; then
-  EXIFTOOL_CMD="exiftool -r -P -ext ${EXTENSION} -o ."
+  EXIFTOOL_CMD="exiftool -r -P -overwrite_original -ext ${EXTENSION} -o ."
 else
-  EXIFTOOL_CMD="exiftool -r -P -o ."
+  EXIFTOOL_CMD="exiftool -r -P -overwrite_original --ext jpg --ext wav --ext mp4 -o ."
 fi
 
 # Append the rest of the command
