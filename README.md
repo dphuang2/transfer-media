@@ -6,6 +6,15 @@
 
 Organizes and copies media files from a source directory to a destination directory, optionally filtering by file extension. Files are organized into date-based folders, and their original filenames are preserved.
 
+**Best Practice:**
+It is recommended to organize all files you want to transfer into their own folder on the SD card before running the transfer. This helps avoid accidental transfer of unwanted files and makes the process more manageable.
+
+**Example:**
+
+```sh
+./transfer.sh /Volumes/SD_Card/DCIM/7-12-2025_Import ~/Downloads/test mp4
+```
+
 **Usage:**
 
 ```sh

@@ -9,23 +9,53 @@ if [ "$#" -lt 2 ] || [ "$#" -gt 3 ]; then
   exit 1
 fi
 
-# Assign positional arguments to variables
 SOURCE_DIR=$1
 DESTINATION_DIR=$2
 EXTENSION=$3
 
-# Construct the exiftool command with optional extension filtering
+# Build the find command for the extension(s)
+FILES=()
 if [ -n "$EXTENSION" ]; then
-  EXIFTOOL_CMD="exiftool -r -P -ext ${EXTENSION} -o ."
+  while IFS= read -r -d '' file; do
+    FILES+=("$file")
+  done < <(find "$SOURCE_DIR" -type f -iname "*.$EXTENSION" -print0)
 else
-  EXIFTOOL_CMD="exiftool -r -P -ext jpg -ext wav -ext mp4 -o ."
+  while IFS= read -r -d '' file; do
+    FILES+=("$file")
+  done < <(find "$SOURCE_DIR" -type f \( -iname "*.jpg" -o -iname "*.wav" -o -iname "*.mp4" \) -print0)
 fi
 
-# Organize into date-based folders, but preserve original filename
-EXIFTOOL_CMD+=" -d \"$DESTINATION_DIR/%Y/%m/%d\" \"$SOURCE_DIR\""
+TOTAL_FILES=${#FILES[@]}
+if [ "$TOTAL_FILES" -eq 0 ]; then
+  echo "No files found to transfer."
+  exit 0
+fi
 
-# Print the command for verification
-echo "Running command: $EXIFTOOL_CMD"
+# Progress bar function
+print_progress() {
+  local current=$1
+  local total=$2
+  local width=40
+  local percent=$(( 100 * current / total ))
+  local filled=$(( width * current / total ))
+  local empty=$(( width - filled ))
+  printf "\r["
+  for ((i=0; i<filled; i++)); do printf "#"; done
+  for ((i=0; i<empty; i++)); do printf "-"; done
+  printf "] %3d%% (%d/%d)" "$percent" "$current" "$total"
+}
 
-# Execute the command
-eval $EXIFTOOL_CMD
+# Transfer files with progress
+for i in "${!FILES[@]}"; do
+  file="${FILES[$i]}"
+  print_progress $((i+1)) $TOTAL_FILES
+  printf "  %s" "$(basename "$file")"
+  exiftool -P -m \
+    '-Directory<${FileModifyDate}' \
+    '-FileName=%f.%e' \
+    -d "$DESTINATION_DIR/%Y/%m/%d" \
+    "$file" > /dev/null
+  printf "\r"
+done
+print_progress $TOTAL_FILES $TOTAL_FILES
+printf "\nDone!\n"
