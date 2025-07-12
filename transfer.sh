@@ -21,11 +21,7 @@ else
   EXIFTOOL_CMD="exiftool -r -P -ext jpg -ext wav -ext mp4 -o ."
 fi
 
-# Append the rest of the command
-EXIFTOOL_CMD+=" '-FileName<\$FileModifyDate/\${FileModifyDate#;DateFmt(\"%Y-%m-%d_%H%M%S\")}_%f%-c.%e'"
-EXIFTOOL_CMD+=" '-FileName<\$DateTimeOriginal/\${DateTimeOriginal#;DateFmt(\"%Y-%m-%d_%H%M%S\")}_%f%-c.%e'"
-EXIFTOOL_CMD+=" '-FileName<\$FileModifyDate/\${model;}/\${FileModifyDate#;DateFmt(\"%Y-%m-%d_%H%M%S\")}_\${model}_%f%-c.%e'"
-EXIFTOOL_CMD+=" '-FileName<\$DateTimeOriginal/\${model;}/\${DateTimeOriginal#;DateFmt(\"%Y-%m-%d_%H%M%S\")}_\${model}_%f%-c.%e'"
+# Organize into date-based folders, but preserve original filename
 EXIFTOOL_CMD+=" -d \"$DESTINATION_DIR/%Y/%m/%d\" \"$SOURCE_DIR\""
 
 # Print the command for verification
