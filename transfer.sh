@@ -12,6 +12,20 @@ fi
 SOURCE_DIR=$1
 DESTINATION_DIR=$2
 EXTENSION=$3
+MAX_JOBS=4  # Number of parallel jobs
+
+# Prepare for cleanup
+PROGRESS_FILE=$(mktemp)
+cleanup() {
+  echo -e "\nAborting. Cleaning up..."
+  rm -f "$PROGRESS_FILE" "$PROGRESS_FILE.lock"
+  # Kill all child jobs
+  jobs -p | xargs -r kill 2>/dev/null
+  exit 130
+}
+trap cleanup SIGINT SIGTERM
+
+echo 0 > "$PROGRESS_FILE"
 
 # Build the find command for the extension(s)
 FILES=()
@@ -28,6 +42,7 @@ fi
 TOTAL_FILES=${#FILES[@]}
 if [ "$TOTAL_FILES" -eq 0 ]; then
   echo "No files found to transfer."
+  rm -f "$PROGRESS_FILE" "$PROGRESS_FILE.lock"
   exit 0
 fi
 
@@ -45,17 +60,46 @@ print_progress() {
   printf "] %3d%% (%d/%d)" "$percent" "$current" "$total"
 }
 
-# Transfer files with progress
-for i in "${!FILES[@]}"; do
-  file="${FILES[$i]}"
-  print_progress $((i+1)) $TOTAL_FILES
-  printf "  %s" "$(basename "$file")"
+# Semaphore function to limit parallel jobs
+semaphore() {
+  local max=$1
+  while (( $(jobs -rp | wc -l) >= max )); do
+    sleep 0.2
+  done
+}
+
+# Function to process a single file
+process_file() {
+  local file="$1"
+  # Compute the target directory using exiftool date format
+  local target_dir
+  target_dir=$(exiftool -s3 -d "$DESTINATION_DIR/%Y/%m/%d" -FileModifyDate "$file")
+  mkdir -p "$target_dir"
   exiftool -P -m \
     '-Directory<${FileModifyDate}' \
     '-FileName=%f.%e' \
     -d "$DESTINATION_DIR/%Y/%m/%d" \
-    "$file" > /dev/null
-  printf "\r"
+    "$file" 2>&1 | grep -Ev 'already exists|files weren'\''t updated due to errors|image files updated'
+  # Simple progress update (not atomic, but good enough for small parallelism)
+  local n=$(<"$PROGRESS_FILE")
+  n=$((n+1))
+  echo "$n" > "$PROGRESS_FILE"
+  print_progress "$n" "$TOTAL_FILES"
+  printf "  %s\n" "$(basename "$file")"
+}
+
+# Export functions and variables for subshells
+export -f process_file print_progress
+export DESTINATION_DIR TOTAL_FILES PROGRESS_FILE
+
+# Main parallel loop
+for file in "${FILES[@]}"; do
+  semaphore "$MAX_JOBS"
+  process_file "$file" &
 done
-print_progress $TOTAL_FILES $TOTAL_FILES
+wait
+
+# Final progress
+print_progress "$TOTAL_FILES" "$TOTAL_FILES"
 printf "\nDone!\n"
+rm -f "$PROGRESS_FILE" "$PROGRESS_FILE.lock"
