@@ -76,9 +76,7 @@ process_file() {
   target_dir=$(exiftool -s3 -d "$DESTINATION_DIR/%Y/%m/%d" -FileModifyDate "$file")
   mkdir -p "$target_dir"
   exiftool -P -m \
-    '-Directory<${FileModifyDate}' \
-    '-FileName=%f.%e' \
-    -d "$DESTINATION_DIR/%Y/%m/%d" \
+    -o "$target_dir/%f.%e" \
     "$file" 2>&1 | grep -Ev 'already exists|files weren'\''t updated due to errors|image files updated'
   # Simple progress update (not atomic, but good enough for small parallelism)
   local n=$(<"$PROGRESS_FILE")
