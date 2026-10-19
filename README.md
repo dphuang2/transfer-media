@@ -52,3 +52,25 @@ Interactively labels date-based folders (e.g., `/YYYY/MM/DD`) under a root direc
 ```
 
 The script will prompt you to enter a label for each unlabelled date folder it finds.
+
+---
+
+### grade.sh
+
+Applies the DJI D-Log M → Rec.709 3D LUT to DJI (e.g. Osmo Pocket 3) footage recorded in D-Log M mode, restoring standard coloring. Keeps 4K 10-bit HEVC at near-transparent quality and copies audio untouched. Graded copies are saved next to each input, suffixed with `-graded`.
+
+**Usage:**
+
+```sh
+./grade.sh <file_or_directory>
+```
+
+- `<file_or_directory>`: A single MP4, or a directory of MP4s to grade in place. Already-graded files are skipped.
+
+**Example:**
+
+```sh
+./grade.sh /Volumes/Dylan1TB/Vlogs/2024/01
+```
+
+Requires `ffmpeg` (e.g. `brew install ffmpeg`). The LUT (`DLogM_to_Rec709.cube`) must sit next to the script.
