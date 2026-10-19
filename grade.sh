@@ -55,7 +55,7 @@ for file in "${FILES[@]}"; do
     echo "Grading $base ..."
     ffmpeg -y -v warning -stats -i "$file" \
         -vf "lut3d=$LUT,format=yuv420p10le" \
-        -c:v libx265 -preset medium -crf 18 -tag:v hvc1 \
+        -c:v hevc_videotoolbox -q:v 65 -tag:v hvc1 \
         -color_primaries bt709 -color_trc bt709 -colorspace bt709 \
         -c:a copy -movflags +faststart \
         "$output"
